@@ -1,0 +1,15 @@
+{
+  "description": "Explore e edite tabelas SQLite com desfazer/refazer, paginação, JOINs SQL e exportação CSV/JSON.",
+  "command.open": "SQLite: Abrir banco de dados",
+  "command.refresh": "SQLite: Atualizar explorador",
+  "command.showTable": "SQLite: Visualizar tabela (SELECT)",
+  "command.showTableBeside": "SQLite: Visualizar tabela ao lado",
+  "command.close": "SQLite: Fechar conexão",
+  "command.query": "SQLite: Consulta SQL",
+  "command.showExplorer": "SQLite: Mostrar explorador de bancos",
+  "databases": "Bancos de dados",
+  "welcome": "Explore bancos SQLite, edite células e execute consultas SQL.\n[Abrir banco de dados](command:sqliteExplorer.open)",
+  "setting.language": "Idioma do explorador de bancos e do editor de consultas. Recarregue a janela após alterar. Os títulos dos comandos e configurações seguem o idioma de exibição do VS Code.",
+  "language.auto": "Seguir o idioma de exibição do VS Code",
+  "setting.openTablesBeside": "Abrir as tabelas ao lado do editor atual ao clicar nelas na árvore do banco."
+}

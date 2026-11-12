@@ -1,0 +1,15 @@
+{
+  "description": "Browse and edit SQLite tables with undo/redo, paged results, SQL JOINs and CSV/JSON export.",
+  "command.open": "SQLite: Open database",
+  "command.refresh": "SQLite: Refresh explorer",
+  "command.showTable": "SQLite: View table (SELECT)",
+  "command.showTableBeside": "SQLite: View table to the side",
+  "command.close": "SQLite: Close connection",
+  "command.query": "SQLite: SQL query",
+  "command.showExplorer": "SQLite: Show database explorer",
+  "databases": "Databases",
+  "welcome": "Browse SQLite databases, edit cells and run SQL queries.\n[Open database](command:sqliteExplorer.open)",
+  "setting.language": "Language for the database explorer and query editor. Reload the window after changing it. Command and settings titles follow the VS Code display language.",
+  "language.auto": "Follow the VS Code display language",
+  "setting.openTablesBeside": "Open tables to the side of the current editor when clicking them in the database tree."
+}

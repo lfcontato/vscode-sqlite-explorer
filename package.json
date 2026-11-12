@@ -1,0 +1,163 @@
+{
+  "name": "sqlite-explorer-local",
+  "displayName": "LF SQLite Explorer",
+  "description": "%description%",
+  "version": "0.3.0",
+  "publisher": "lfcontato",
+  "repository": { "type": "git", "url": "https://github.com/lfcontato/vscode-sqlite-explorer.git" },
+  "homepage": "https://github.com/lfcontato/vscode-sqlite-explorer#readme",
+  "bugs": { "url": "https://github.com/lfcontato/vscode-sqlite-explorer/issues" },
+  "keywords": ["sqlite", "sql", "database", "table", "editor", "join"],
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onCustomEditor:sqliteExplorer.database",
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "sqliteExplorer.open",
+        "title": "%command.open%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sqliteExplorer.refresh",
+        "title": "%command.refresh%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sqliteExplorer.showTable",
+        "title": "%command.showTable%"
+      },
+      {
+        "command": "sqliteExplorer.close",
+        "title": "%command.close%",
+        "icon": "$(close)"
+      },
+      { "command": "sqliteExplorer.query", "title": "%command.query%", "icon": "$(code)" },
+      { "command": "sqliteExplorer.showExplorer", "title": "%command.showExplorer%", "icon": "$(list-tree)" },
+      { "command": "sqliteExplorer.showTableBeside", "title": "%command.showTableBeside%", "icon": "$(split-horizontal)" }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sqliteExplorer",
+          "title": "SQLite Explorer",
+          "icon": "media/database.svg"
+        }
+      ]
+    },
+    "views": {
+      "sqliteExplorer": [
+        {
+          "id": "sqliteExplorer.databases",
+          "name": "%databases%"
+        }
+      ],
+      "explorer": [{ "id": "sqliteExplorer.files", "name": "SQLite Explorer" }]
+    },
+    "viewsWelcome": [
+      {
+        "view": "sqliteExplorer.databases",
+        "contents": "%welcome%"
+      },
+      { "view": "sqliteExplorer.files", "contents": "%welcome%" }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sqliteExplorer.open",
+          "when": "view == sqliteExplorer.databases || view == sqliteExplorer.files",
+          "group": "navigation"
+        },
+        {
+          "command": "sqliteExplorer.refresh",
+          "when": "view == sqliteExplorer.databases || view == sqliteExplorer.files",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sqliteExplorer.close",
+          "when": "(view == sqliteExplorer.databases || view == sqliteExplorer.files) && viewItem == database",
+          "group": "inline"
+        },
+        { "command": "sqliteExplorer.query", "when": "(view == sqliteExplorer.databases || view == sqliteExplorer.files) && viewItem == database", "group": "sqlite@1" },
+        { "command": "sqliteExplorer.showTable", "when": "(view == sqliteExplorer.databases || view == sqliteExplorer.files) && viewItem == table", "group": "sqlite@1" },
+        { "command": "sqliteExplorer.showTableBeside", "when": "(view == sqliteExplorer.databases || view == sqliteExplorer.files) && viewItem == table", "group": "sqlite@2" }
+      ],
+      "explorer/context": [
+        {
+          "command": "sqliteExplorer.open",
+          "when": "resourceScheme == file && resourceExtname =~ /\\.(db|sqlite|sqlite3)$/i",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SQLite Explorer",
+      "properties": {
+        "sqliteExplorer.language": { "type": "string", "enum": ["auto", "en", "pt"], "default": "auto", "description": "%setting.language%", "enumDescriptions": ["%language.auto%", "English", "Português"] },
+        "sqliteExplorer.openTablesBeside": { "type": "boolean", "default": false, "description": "%setting.openTablesBeside%" }
+      }
+    },
+    "customEditors": [
+      {
+        "viewType": "sqliteExplorer.database",
+        "displayName": "SQLite Explorer",
+        "selector": [
+          {
+            "filenamePattern": "*.db"
+          },
+          {
+            "filenamePattern": "*.sqlite"
+          },
+          {
+            "filenamePattern": "*.sqlite3"
+          }
+        ],
+        "priority": "default"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "check": "tsc --noEmit -p .",
+    "test": "npm run compile && node --test dist/test/*.test.js",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package --allow-missing-repository --out sqlite-explorer.vsix"
+  },
+  "dependencies": {
+    "sqlite3": "6.0.1"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "~1.99.0",
+    "@vscode/vsce": "^4.1.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.9.3"
+  }
+}
