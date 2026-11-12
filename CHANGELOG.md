@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Add a dedicated database icon to the extension listing and Marketplace packages, using the publisher's navy palette.
+
 ## 0.3.0
 
 - Add typed cell editing for real tables with a non-null, safely represented primary key.
