@@ -2,7 +2,7 @@
   "name": "sqlite-explorer-local",
   "displayName": "LF SQLite Explorer",
   "description": "%description%",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "icon": "media/icon.png",
   "publisher": "lfcontato",
   "repository": { "type": "git", "url": "https://github.com/lfcontato/vscode-sqlite-explorer.git" },
@@ -140,6 +140,7 @@
     ]
   },
   "scripts": {
+    "demo": "node examples/create-demo.cjs",
     "compile": "tsc -p .",
     "watch": "tsc -w -p .",
     "check": "tsc --noEmit -p .",

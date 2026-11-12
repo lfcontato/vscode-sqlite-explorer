@@ -10,15 +10,31 @@ Extensão do Visual Studio Code para explorar arquivos SQLite, editar células e
 - Árvore no explorador de arquivos e no ícone SQLite: banco → Tabelas → tabela → colunas; views e índices também aparecem.
 - Clique na tabela para executar um SELECT com 100 registros por página, filtro literal e ordenação.
 - Botão direito na raiz do banco → **SQLite: Consulta SQL** para uma aba independente com JOINs, CTEs, subconsultas e agregações.
-- Edição por duplo clique, com escolha explícita entre Texto, Número e NULL.
+- Duplo clique em qualquer linha abre um modal com os campos na vertical, escolha entre Texto, Número e NULL e proteção dos campos somente leitura.
 - **Desfazer**, **Refazer**, **Salvar alterações** e **Descartar alterações**. Integração com o salvamento, o aviso ao fechar abas e a restauração de rascunhos do VS Code.
 - Backup SQLite consistente antes de cada lote de gravação, transação atômica, chaves estrangeiras e detecção de conflitos.
 - Exportação dos registros visíveis para CSV/JSON, incluindo os valores pendentes exibidos na grade.
 - Conexões lembradas por workspace. A restauração da árvore não executa consultas SQL escritas pelo usuário.
 
+## Capturas de tela
+
+Capturas reais da extensão na janela de desenvolvimento do VS Code, usando dados fictícios de demonstração.
+
+### Explorador de bancos e tabela
+
+![Árvore do banco e tabela paginada](docs/screenshots/explorer.png)
+
+### Modal aberto pelo duplo clique na linha
+
+![Campos do registro na vertical e chave primária protegida](docs/screenshots/row-editor.png)
+
+### Consulta SQL com JOIN
+
+![Editor SQL independente executando um JOIN](docs/screenshots/sql-query.png)
+
 ## Instalação
 
-No Marketplace, procure **LF SQLite Explorer**, publisher **lfcontato**, após a disponibilização da primeira versão.
+Instale [LF SQLite Explorer, publisher lfcontato](https://marketplace.visualstudio.com/items?itemName=lfcontato.sqlite-explorer-local), pelo Marketplace.
 
 Para instalar um pacote local, execute **Extensions: Install from VSIX…** e escolha o pacote do sistema em que a extensão será executada:
 
@@ -47,7 +63,7 @@ Adapte os nomes ao seu banco. O editor SQL permanece somente leitura; a gravaç�
 
 ## Editar, desfazer e refazer
 
-Clique duas vezes em uma célula editável ou selecione-a e pressione Enter. Escolha o tipo, preencha o valor e clique em **Aplicar**. **Shift+Enter** insere uma quebra de linha no texto. Use os botões Desfazer/Refazer ou **Ctrl/Cmd+Z**, **Ctrl/Cmd+Shift+Z** e **Ctrl+Y** com o foco na grade. Dentro de um campo de texto, os atalhos mantêm o comportamento normal do campo.
+Clique duas vezes em qualquer linha ou selecione-a e pressione Enter. Um modal exibe todos os campos na vertical; campos protegidos permanecem somente leitura. Resultados de consultas arbitrárias também podem ser inspecionados em um modal somente leitura. Escolha os tipos dos campos editáveis e clique em **Aplicar** ou use **Ctrl/Cmd+Enter**. Cada registro aplicado é uma única ação de desfazer, mesmo alterando vários campos. **Escape** ou **Cancelar** descarta apenas o que ainda não foi aplicado no modal. Enter insere uma quebra de linha em um campo de texto. Use os botões Desfazer/Refazer ou **Ctrl/Cmd+Z**, **Ctrl/Cmd+Shift+Z** e **Ctrl+Y** com o foco na grade. Dentro de um campo de texto, os atalhos mantêm o comportamento normal do campo.
 
 As alterações ficam pendentes até salvar, inclusive quando o salvamento é iniciado pela configuração de autosave do VS Code. **Salvar ou descartar encerra o histórico da edição pendente.** Não há rollback automático do banco após um salvamento bem-sucedido. Salve ou descarte antes de mudar de tabela, página, filtro ou executar outra consulta.
 
@@ -94,6 +110,8 @@ npm test
 npm audit
 npm run package
 ```
+
+Execute `npm run demo` para criar `examples/demo.sqlite` com clientes e pedidos fictícios. Arquivos existentes são preservados. O banco de demonstração e os prints ficam fora dos pacotes de execução; as imagens ficam disponíveis no repositório e nos READMEs.
 
 Pressione **F5** para abrir uma janela de desenvolvimento. Gere cada pacote em seu sistema de destino:
 

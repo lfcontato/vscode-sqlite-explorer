@@ -1,14 +1,15 @@
-import { Cell, Result, RowChange, WriteResult } from './database';
+import { Cell, Result, Row, RowChange, WriteResult } from './database';
 import { AppError } from './errors';
 
 interface CellEdit { row: number; column: string; before: Cell; after: Cell }
-export interface EditDraft { base: Result; commands: CellEdit[]; cursor: number }
+interface EditCommand { edits: CellEdit[] }
+export interface EditDraft { base: Result; commands: EditCommand[]; cursor: number }
 
 /** Command history for one page. No editor API, SQL, filesystem, or write side effects. */
 export class EditSession {
   private readonly base: Result;
   private current: Result;
-  private commands: CellEdit[] = [];
+  private commands: EditCommand[] = [];
   private cursor = 0;
   constructor(result: Result) { this.base = structuredClone(result); this.current = structuredClone(result); }
   get result(): Result { return structuredClone(this.current); }
@@ -24,15 +25,19 @@ export class EditSession {
     return Boolean(info && snapshot?.safe && record && info.columns.includes(column) && snapshot.types[column] !== 'blob' && info.primaryKeys.every(key => record[key] !== null && record[key] !== undefined));
   }
   edit(row: number, column: string, value: Cell): void {
-    if (!this.canEdit(row, column) || !isCell(value) || this.cursor >= 1000) { throw new AppError('invalidEdit'); }
-    const before = this.current.rows[row]![column]!;
-    if (before === value) { return; }
-    this.commands.splice(this.cursor);
-    this.commands.push({ row, column, before, after: value }); this.cursor++;
-    this.current.rows[row]![column] = value;
+    this.editRow(row, { [column]: value });
   }
-  undo(): void { if (this.canUndo) { const command = this.commands[--this.cursor]!; this.current.rows[command.row]![command.column] = command.before; } }
-  redo(): void { if (this.canRedo) { const command = this.commands[this.cursor++]!; this.current.rows[command.row]![command.column] = command.after; } }
+  editRow(row: number, values: Row): void {
+    const entries = Object.entries(values);
+    if (!entries.length || entries.length > 1000 || this.cursor >= 1000 || entries.some(([column, value]) => !this.canEdit(row, column) || !isCell(value))) { throw new AppError('invalidEdit'); }
+    const edits = entries.filter(([column, value]) => this.current.rows[row]![column] !== value).map(([column, after]) => ({ row, column, before: this.current.rows[row]![column]!, after }));
+    if (!edits.length) { return; }
+    this.commands.splice(this.cursor);
+    this.commands.push({ edits }); this.cursor++;
+    for (const edit of edits) { this.current.rows[row]![edit.column] = edit.after; }
+  }
+  undo(): void { if (this.canUndo) { for (const edit of this.commands[--this.cursor]!.edits) { this.current.rows[edit.row]![edit.column] = edit.before; } } }
+  redo(): void { if (this.canRedo) { for (const edit of this.commands[this.cursor++]!.edits) { this.current.rows[edit.row]![edit.column] = edit.after; } } }
   discard(): void { this.current = structuredClone(this.base); this.commands = []; this.cursor = 0; }
   changes(): RowChange[] {
     const info = this.base.editing;
@@ -67,9 +72,12 @@ export class EditSession {
     if (!Array.isArray(state.commands) || state.commands.length > 1000 || !Number.isInteger(state.cursor) || state.cursor < 0 || state.cursor > state.commands.length) { throw new AppError('invalidEdit'); }
     const session = new EditSession(base);
     for (const command of state.commands) {
-      if (!command || !Number.isInteger(command.row) || typeof command.column !== 'string') { throw new AppError('invalidEdit'); }
-      session.edit(command.row, command.column, command.after);
+      // Accept drafts from 0.3.x, whose commands contained a single cell edit.
+      const edits = command && Array.isArray(command.edits) ? command.edits : [command as unknown as CellEdit];
+      if (!edits.length || edits.length > 1000 || edits.some(edit => !edit || !Number.isInteger(edit.row) || edit.row !== edits[0]!.row || typeof edit.column !== 'string') || new Set(edits.map(edit => edit.column)).size !== edits.length) { throw new AppError('invalidEdit'); }
+      session.editRow(edits[0]!.row, Object.fromEntries(edits.map(edit => [edit.column, edit.after])));
     }
+    if (session.commands.length !== state.commands.length) { throw new AppError('invalidEdit'); }
     while (session.cursor > state.cursor) { session.undo(); }
     return session;
   }

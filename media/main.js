@@ -19,6 +19,7 @@
   let canUndo = false;
   let canRedo = false;
   let cellEditorOpen = false;
+  let rowDialog;
   const text = (key, values = {}) => String(labels[key] || key).replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ''));
   let preferredTable = saved.table;
   $('sql').value = saved.sql || '';
@@ -37,6 +38,11 @@
     $('editing').hidden = !currentResult?.editing;
     $('pending').textContent = dirtyCount ? text('pendingCount', { count: dirtyCount }) : '';
     if ($('mode')) { $('mode').textContent = text(currentResult?.editing ? 'editing' : 'readOnly'); }
+    if (rowDialog) {
+      rowDialog.apply.disabled = busy;
+      rowDialog.cancel.disabled = busy;
+      for (const field of rowDialog.fields) { field.type.disabled = busy || !field.canEdit; field.input.disabled = busy || (field.canEdit && field.type.value === 'null'); }
+    }
   }
   function send(message) {
     if (busy) { return; }
@@ -66,27 +72,61 @@
     const snapshot = result.snapshots?.[rowIndex];
     return info && snapshot?.safe && info.columns.includes(column) && snapshot.types[column] !== 'blob' && info.primaryKeys.every(key => result.rows[rowIndex][key] != null);
   }
-  function editCell(td, rowIndex, column, result) {
-    if (busy || cellEditorOpen || !editable(rowIndex, column, result)) { return; }
+  function closeRowEditor() {
+    if (!rowDialog) { return; }
+    const modal = rowDialog; rowDialog = undefined; cellEditorOpen = false;
+    if (modal.dialog.open) { modal.dialog.close(); }
+    modal.dialog.remove(); controls();
+    document.querySelector(`tr[data-row-index="${modal.rowIndex}"]`)?.focus();
+  }
+  function openRowEditor(rowIndex, result) {
+    if (busy || cellEditorOpen) { return; }
     cellEditorOpen = true;
-    const value = result.rows[rowIndex][column];
-    const group = document.createElement('div'); group.className = 'cell-editor';
-    const type = document.createElement('select'); type.setAttribute('aria-label', text('editCell', { column }));
-    for (const [key, label] of [['text', 'cellText'], ['number', 'cellNumber'], ['null', 'cellNull']]) { const option = document.createElement('option'); option.value = key; option.textContent = text(label); type.append(option); }
-    type.value = value === null ? 'null' : typeof value === 'number' ? 'number' : 'text';
-    const input = document.createElement('textarea'); input.className = 'cell-input'; input.maxLength = 65536; input.value = value === null ? '' : String(value); input.setAttribute('aria-label', text('editCell', { column })); input.disabled = type.value === 'null';
-    type.addEventListener('change', () => { input.disabled = type.value === 'null'; });
-    const apply = document.createElement('button'); apply.textContent = text('apply');
-    const cancel = document.createElement('button'); cancel.textContent = text('cancel'); cancel.className = 'secondary';
-    const cancelEdit = () => { cellEditorOpen = false; render(currentResult); controls(); };
+    const dialog = document.createElement('dialog'); dialog.className = 'row-dialog'; dialog.setAttribute('aria-labelledby', 'row-dialog-title');
+    const form = document.createElement('form');
+    const heading = document.createElement('h2'); heading.id = 'row-dialog-title';
+    const subtitle = document.createElement('p'); subtitle.className = 'hint'; subtitle.textContent = text('rowPosition', { table: tableMode ? $('tables').value : text('queryResult'), row: tableMode ? page * 100 + rowIndex + 1 : rowIndex + 1 });
+    const fieldsContainer = document.createElement('div'); fieldsContainer.className = 'row-fields';
+    const fields = [];
+    for (const [index, column] of result.columns.entries()) {
+      const value = result.rows[rowIndex][column];
+      const canEdit = Boolean(editable(rowIndex, column, result));
+      const group = document.createElement('div'); group.className = 'row-field';
+      const label = document.createElement('label'); label.htmlFor = `row-field-${index}`; label.textContent = column;
+      const type = document.createElement('select'); type.className = 'row-field-type'; type.setAttribute('aria-label', column + ' · ' + text('cellText') + '/' + text('cellNumber') + '/NULL');
+      for (const [key, title] of [['text', 'cellText'], ['number', 'cellNumber'], ['null', 'cellNull']]) { const option = document.createElement('option'); option.value = key; option.textContent = text(title); type.append(option); }
+      type.value = value === null ? 'null' : typeof value === 'number' ? 'number' : 'text'; type.hidden = !canEdit;
+      const input = document.createElement('textarea'); input.id = label.htmlFor; input.className = 'row-field-input'; input.rows = 2; input.maxLength = 65536; input.value = value === null ? (canEdit ? '' : 'NULL') : String(value); input.readOnly = !canEdit;
+      type.addEventListener('change', () => { input.disabled = type.value === 'null'; });
+      group.append(label, type, input);
+      if (!canEdit) { const note = document.createElement('small'); note.className = 'hint'; note.textContent = text('protectedField'); group.append(note); }
+      fieldsContainer.append(group); fields.push({ column, original: value, type, input, canEdit });
+    }
+    const hasEditable = fields.some(field => field.canEdit);
+    heading.textContent = text(hasEditable ? 'editRow' : 'rowDetails');
+    const hint = document.createElement('p'); hint.className = 'hint'; hint.textContent = text(hasEditable ? 'rowModalHint' : 'readOnly');
+    const error = document.createElement('p'); error.className = 'row-error'; error.setAttribute('role', 'alert');
+    const actions = document.createElement('div'); actions.className = 'row-dialog-actions';
+    const apply = document.createElement('button'); apply.type = 'submit'; apply.textContent = text('apply'); apply.hidden = !hasEditable;
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'secondary'; cancel.textContent = text('cancel'); cancel.addEventListener('click', closeRowEditor);
+    actions.append(cancel, apply);
     const submit = () => {
-      const nextValue = type.value === 'null' ? null : type.value === 'number' ? Number(input.value) : input.value;
-      if (type.value === 'number' && (!input.value.trim() || !Number.isFinite(nextValue) || (Number.isInteger(nextValue) && !Number.isSafeInteger(nextValue)))) { $('status').textContent = text('invalidEdit'); return; }
-      cellEditorOpen = false; send({ type: 'edit', row: rowIndex, column, value: nextValue });
+      if (busy || !hasEditable) { return; }
+      const values = [];
+      for (const field of fields.filter(field => field.canEdit)) {
+        const value = field.type.value === 'null' ? null : field.type.value === 'number' ? Number(field.input.value) : field.input.value;
+        if (field.type.value === 'number' && (!field.input.value.trim() || !Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value)))) { error.textContent = text('invalidEdit'); field.input.focus(); return; }
+        if (value !== field.original) { values.push([field.column, value]); }
+      }
+      if (!values.length) { closeRowEditor(); return; }
+      error.textContent = ''; send({ type: 'editRow', row: rowIndex, values: Object.fromEntries(values) });
     };
-    apply.addEventListener('click', submit); cancel.addEventListener('click', cancelEdit);
-    input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); cancelEdit(); } else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); } });
-    group.append(type, input, apply, cancel); td.replaceChildren(group); controls(); input.focus(); input.select();
+    form.addEventListener('submit', event => { event.preventDefault(); submit(); });
+    dialog.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); submit(); } });
+    dialog.addEventListener('cancel', event => { event.preventDefault(); if (!busy) { closeRowEditor(); } });
+    form.append(heading, subtitle, fieldsContainer, hint, error, actions); dialog.append(form); document.body.append(dialog);
+    rowDialog = { dialog, fields, apply, cancel, error, rowIndex }; controls(); dialog.showModal();
+    (fields.find(field => field.canEdit)?.input || cancel).focus();
   }
   function render(result) {
     $('grid').replaceChildren();
@@ -109,15 +149,17 @@
     const body = table.createTBody();
     for (const [rowIndex, row] of result.rows.entries()) {
       const tr = body.insertRow();
+      tr.dataset.rowIndex = rowIndex; tr.tabIndex = 0; tr.className = 'data-row';
+      tr.setAttribute('aria-label', text('rowPosition', { table: tableMode ? $('tables').value : text('queryResult'), row: rowIndex + 1 }));
+      tr.addEventListener('dblclick', () => openRowEditor(rowIndex, result));
+      tr.addEventListener('keydown', event => { if (event.target === tr && event.key === 'Enter') { event.preventDefault(); openRowEditor(rowIndex, result); } });
       for (const column of result.columns) {
         const td = tr.insertCell(); const value = row[column];
         td.textContent = value === null ? 'NULL' : String(value ?? '');
         if (value === null) { td.className = 'null'; }
         td.title = td.textContent;
         if (editable(rowIndex, column, result)) {
-          td.classList.add('editable'); td.tabIndex = 0;
-          td.addEventListener('dblclick', () => editCell(td, rowIndex, column, result));
-          td.addEventListener('keydown', event => { if (event.target === td && event.key === 'Enter') { event.preventDefault(); editCell(td, rowIndex, column, result); } });
+          td.classList.add('editable');
         }
       }
     }
@@ -143,6 +185,7 @@
       preferredTable = undefined;
     } else if (data.type === 'select') { selectTable(data.table); }
     else if (data.type === 'result') {
+      closeRowEditor();
       currentResult = data.result; dirtyCount = 0; canUndo = false; canRedo = false; cellEditorOpen = false;
       hasResult = true; hasNext = data.result.truncated;
       if (typeof data.page === 'number') { page = data.page; }
@@ -150,18 +193,23 @@
       $('status').textContent = `${text('rowCount', { count: data.result.rows.length })}${data.result.truncated ? ' · ' + text(tableMode ? 'moreRows' : 'limited') : ''}. ${text('exportHint')}`;
       $('pagination').textContent = tableMode ? text('page', { page: page + 1 }) : text('queryResult');
     } else if (data.type === 'edits') {
+      const editedRowIndex = rowDialog?.rowIndex;
+      closeRowEditor();
       currentResult = data.result; hasResult = true; cellEditorOpen = false;
       dirtyCount = data.dirtyCount; canUndo = data.canUndo; canRedo = data.canRedo;
       if (data.request) { page = data.request.page; sort = data.request.sort; descending = data.request.descending; $('tables').value = data.request.table; $('filter').value = data.request.filter; tableMode = true; $('pagination').textContent = text('page', { page: page + 1 }); }
       hasNext = data.result.truncated;
       render(data.result);
+      if (editedRowIndex !== undefined) { document.querySelector(`tr[data-row-index="${editedRowIndex}"]`)?.focus(); }
       $('status').textContent = dirtyCount ? text('pendingCount', { count: dirtyCount }) : text('rowCount', { count: data.result.rows.length });
     } else if (data.type === 'saving') { busy = true; controls(); }
     else if (data.type === 'saved') { $('status').textContent = text('savedChanges', { path: data.backupPath }); }
     else if (data.type === 'editError') {
-      cellEditorOpen = false; if (currentResult) { render(currentResult); }
+      if (rowDialog) { rowDialog.error.textContent = data.message; }
+      else if (currentResult) { render(currentResult); }
       $('status').textContent = data.message; $('status').classList.add('error');
     } else if (data.type === 'error') {
+      closeRowEditor();
       currentResult = undefined; dirtyCount = 0; canUndo = false; canRedo = false;
       hasResult = false; hasNext = false;
       $('grid').replaceChildren();

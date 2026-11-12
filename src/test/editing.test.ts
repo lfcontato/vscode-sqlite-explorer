@@ -33,6 +33,31 @@ async function fixture(t: TestContext): Promise<{ file: string; service: Databas
 }
 const request = { table: 'items', page: 0, filter: '', descending: false };
 
+test('row editing is one atomic undoable command; protected fields reject the entire operation', async t => {
+  const { service } = await fixture(t);
+  const session = new EditSession(await service.page(request));
+  session.editRow(0, { title: 'Grouped', qty: 12, owner: null });
+  assert.equal(session.dirtyCount, 3);
+  session.undo(); assert.equal(session.dirtyCount, 0);
+  session.redo(); assert.equal(session.result.rows[0]?.title, 'Grouped'); assert.equal(session.result.rows[0]?.qty, 12);
+  assert.throws(() => session.editRow(0, { title: 'must not apply', id: 42 }), { code: 'invalidEdit' });
+  assert.equal(session.result.rows[0]?.title, 'Grouped');
+  const restored = EditSession.restore(JSON.parse(JSON.stringify(session.toJSON())));
+  restored.undo(); assert.equal(restored.dirtyCount, 0); restored.redo();
+  restored.commit(await service.save(restored.changes()));
+  assert.equal((await service.page(request)).rows[0]?.title, 'Grouped');
+  assert.equal((await service.page(request)).rows[0]?.owner, null);
+});
+
+test('old single-cell drafts are migrated without losing undo or redo', async t => {
+  const { service } = await fixture(t);
+  const base = await service.page(request);
+  const restored = EditSession.restore({ base, commands: [{ row: 0, column: 'title', before: 'First', after: 'Legacy' }], cursor: 1 });
+  assert.equal(restored.result.rows[0]?.title, 'Legacy');
+  restored.undo(); assert.equal(restored.result.rows[0]?.title, 'First');
+  restored.redo(); assert.equal(restored.result.rows[0]?.title, 'Legacy');
+});
+
 test('cell edits remain staged; atomic save creates a WAL-consistent backup and acknowledges native values', async t => {
   const { service } = await fixture(t);
   const page = await service.page(request);
@@ -125,4 +150,6 @@ test('writer rejects forged schema, primary keys and protected columns; edit pro
   await assert.rejects(service.save(session.changes()), { code: 'editConflict' });
   for (const input of [{ type: 'edit', row: -1, column: 'title', value: 'x' }, { type: 'edit', row: 0, column: 'title', value: {} }, { type: 'edit', row: 0, column: 'title', value: Infinity }, { type: 'edit', row: 0, column: 'title', value: 'x'.repeat(65537) }]) { assert.throws(() => parseMessage(input)); }
   assert.deepEqual(parseMessage({ type: 'edit', row: 1, column: 'title', value: null }), { type: 'edit', row: 1, column: 'title', value: null });
+  assert.deepEqual(parseMessage({ type: 'editRow', row: 0, values: { title: 'New', qty: 2 } }), { type: 'editRow', row: 0, values: { title: 'New', qty: 2 } });
+  for (const values of [{}, [], { title: 'valid', qty: true }, { title: 'x'.repeat(65537) }]) { assert.throws(() => parseMessage({ type: 'editRow', row: 0, values })); }
 });

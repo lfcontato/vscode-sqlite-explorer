@@ -1,8 +1,9 @@
 import { AppError } from './domain/errors';
 export type Language = 'en' | 'pt';
 const en = {
+  editRow: 'Edit row', rowDetails: 'Row details', rowPosition: '{table} · Row {row}', protectedField: 'Protected field · read only', rowModalHint: 'Apply stages all changed fields as one undoable edit. Save changes in the table to write to the database.',
   saveAsUnavailable: 'Save As is not supported for databases. Use CSV/JSON export or the automatic SQLite backup.',
-  editing: 'Table editing', editHint: 'Double-click an editable cell · changes are written only when saved', save: 'Save changes', undo: 'Undo', redo: 'Redo', discard: 'Discard changes', apply: 'Apply', cancel: 'Cancel', cellText: 'Text', cellNumber: 'Number', cellNull: 'NULL', editCell: 'Edit {column}', pendingCount: '{count} pending cell change(s)', savedChanges: 'Changes saved. Backup: {path}',
+  editing: 'Table editing', editHint: 'Double-click a row to open its fields · changes are written only when saved', save: 'Save changes', undo: 'Undo', redo: 'Redo', discard: 'Discard changes', apply: 'Apply', cancel: 'Cancel', cellText: 'Text', cellNumber: 'Number', cellNull: 'NULL', editCell: 'Edit {column}', pendingCount: '{count} pending cell change(s)', savedChanges: 'Changes saved. Backup: {path}',
   invalidEdit: 'This cell or value cannot be edited. Use a real table with a non-null primary key. Key, BLOB, generated and unsafe-number cells are protected.', editingUnavailable: 'Editing is unavailable for this result.', editConflict: 'The row or schema changed outside this editor. Nothing was saved. Keep your draft, or discard it and reload.', pendingEdits: 'Save or discard pending changes before navigating.', discardPrompt: 'Discard all pending cell changes?',
   readOnly: 'Read only', tables: 'Tables', views: 'Views', indexes: 'Indexes', viewTable: 'View table',
   heading: 'Explore your database.', tableOrView: 'Table or view', filter: 'Filter data', search: 'Search all columns…', applyFilter: 'Apply filter', refresh: 'Refresh',
@@ -19,8 +20,9 @@ const en = {
 };
 export type Messages = Record<keyof typeof en, string>;
 const pt: Messages = {
+  editRow: 'Editar registro', rowDetails: 'Detalhes do registro', rowPosition: '{table} · Registro {row}', protectedField: 'Campo protegido · somente leitura', rowModalHint: 'Aplicar mantém os campos alterados como uma única edição que pode ser desfeita. Use Salvar alterações na tabela para gravar no banco.',
   saveAsUnavailable: 'Salvar como não é suportado para bancos. Use exportação CSV/JSON ou o backup automático SQLite.',
-  editing: 'Edição de tabela', editHint: 'Clique duas vezes em uma célula editável · as alterações só são gravadas ao salvar', save: 'Salvar alterações', undo: 'Desfazer', redo: 'Refazer', discard: 'Descartar alterações', apply: 'Aplicar', cancel: 'Cancelar', cellText: 'Texto', cellNumber: 'Número', cellNull: 'NULL', editCell: 'Editar {column}', pendingCount: '{count} alteração(ões) de célula pendente(s)', savedChanges: 'Alterações salvas. Backup: {path}',
+  editing: 'Edição de tabela', editHint: 'Clique duas vezes em uma linha para abrir os campos · as alterações só são gravadas ao salvar', save: 'Salvar alterações', undo: 'Desfazer', redo: 'Refazer', discard: 'Descartar alterações', apply: 'Aplicar', cancel: 'Cancelar', cellText: 'Texto', cellNumber: 'Número', cellNull: 'NULL', editCell: 'Editar {column}', pendingCount: '{count} alteração(ões) de célula pendente(s)', savedChanges: 'Alterações salvas. Backup: {path}',
   invalidEdit: 'Esta célula ou valor não pode ser editado. Use uma tabela real com chave primária não nula. Chaves, BLOBs, colunas geradas e números sem precisão segura são protegidos.', editingUnavailable: 'A edição não está disponível para este resultado.', editConflict: 'O registro ou o schema mudou fora deste editor. Nada foi salvo. Mantenha o rascunho ou descarte e atualize os dados.', pendingEdits: 'Salve ou descarte as alterações pendentes antes de navegar.', discardPrompt: 'Descartar todas as alterações de células pendentes?',
   readOnly: 'Somente leitura', tables: 'Tabelas', views: 'Views', indexes: 'Índices', viewTable: 'Visualizar tabela',
   heading: 'Seu banco, por dentro.', tableOrView: 'Tabela ou view', filter: 'Filtrar dados', search: 'Buscar nas colunas…', applyFilter: 'Aplicar filtro', refresh: 'Atualizar',

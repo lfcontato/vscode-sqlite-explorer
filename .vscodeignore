@@ -13,3 +13,5 @@ package-lock.json
 .gitignore
 bin/**
 branding/**
+docs/screenshots/**
+examples/**

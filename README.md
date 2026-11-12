@@ -10,15 +10,31 @@ Browse SQLite databases, edit table cells, and run SQL queries inside Visual Stu
 - Browse databases → Tables → table → columns in the file explorer or the SQLite activity-bar view. Views and indexes are listed too.
 - Click a table to execute a paged SELECT: 100 rows per page, literal text filters, and column sorting.
 - Right-click a database → **SQLite: SQL query** to open an independent query tab for JOINs, CTEs, subqueries, and aggregates.
-- Double-click an editable cell, choose Text, Number, or NULL, and apply the change to the draft.
+- Double-click any row to open its fields vertically in a modal. Choose Text, Number, or NULL for editable fields; protected fields stay read-only.
 - **Undo**, **Redo**, **Save changes**, and **Discard changes** for staged cell edits. VS Code Save and close prompts are integrated; hot-exit backups preserve drafts.
 - Create a consistent SQLite backup before every write batch; save the batch in one transaction with foreign-key enforcement and row/schema conflict detection.
 - Export the displayed rows to CSV or JSON. Pending edited values are included when they are visible in the grid.
 - Remember database connections per workspace. Restoring the tree does not execute user SQL queries.
 
+## Screenshots
+
+Real captures from the VS Code Extension Development Host, using synthetic demonstration data.
+
+### Database explorer and table
+
+![Database tree and paged table](docs/screenshots/explorer.png)
+
+### Row editor opened by double-click
+
+![Vertical row editing modal with protected primary key](docs/screenshots/row-editor.png)
+
+### SQL JOIN query
+
+![Independent SQL editor with a JOIN and its results](docs/screenshots/sql-query.png)
+
 ## Installation
 
-From the Marketplace, search for **LF SQLite Explorer** by **lfcontato** once the first release is available.
+Install [LF SQLite Explorer by lfcontato](https://marketplace.visualstudio.com/items?itemName=lfcontato.sqlite-explorer-local) from the Marketplace.
 
 For a local package, run **Extensions: Install from VSIX…** and choose the package matching the machine where the extension runs:
 
@@ -47,7 +63,7 @@ Adapt the table and column names to your database. The SQL editor is read-only; 
 
 ## Editing, undo and redo
 
-Double-click an editable grid cell (or focus it and press Enter). Choose its type, enter a value, and use **Apply**. **Shift+Enter** inserts a newline in a text cell. Use the Undo/Redo buttons or **Ctrl/Cmd+Z**, **Ctrl/Cmd+Shift+Z**, or **Ctrl+Y** while the grid has focus. Inside an input, normal text undo applies.
+Double-click any grid row (or focus it and press Enter) to open a modal with all fields arranged vertically. Protected fields remain read-only; arbitrary query results can be inspected in a read-only modal. Choose the editable fields' types and use **Apply** or **Ctrl/Cmd+Enter**. Each applied row is one undoable command, even when several fields change. **Escape** or **Cancel** discards only the unapplied modal changes. Enter inserts a newline in a text field. Use the Undo/Redo buttons or **Ctrl/Cmd+Z**, **Ctrl/Cmd+Shift+Z**, or **Ctrl+Y** while the grid has focus. Inside an input, normal text undo applies.
 
 Edits remain pending until Save, including any save triggered by your VS Code autosave configuration. Undo/Redo affect pending edits; **saving or discarding ends that history**. There is no automatic database rollback after a successful save. Save/discard before changing pages, tables, filters, or running another query.
 
@@ -104,6 +120,8 @@ npm test
 npm audit
 npm run package
 ```
+
+Run `npm run demo` to create `examples/demo.sqlite` with synthetic customers and orders for screenshots. Existing files are left unchanged. The demonstration database and screenshots are excluded from runtime packages; screenshots remain available in the repository and READMEs.
 
 Press **F5** to launch an Extension Development Host. Package native releases on their matching operating system:
 

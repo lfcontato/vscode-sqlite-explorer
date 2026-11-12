@@ -98,9 +98,10 @@ export class TableEditor implements vscode.Disposable {
         this.result = result;
         await this.panel.webview.postMessage({ type: 'result', result, page: message.type === 'page' ? message.request.page : undefined });
         if (this.session) { await this.postEditState(); }
-      } else if (message.type === 'edit' || message.type === 'undo' || message.type === 'redo') {
+      } else if (message.type === 'edit' || message.type === 'editRow' || message.type === 'undo' || message.type === 'redo') {
         if (!this.lifecycle || !this.session) { throw new AppError('editingUnavailable'); }
         if (message.type === 'edit') { this.session.edit(message.row, message.column, message.value); }
+        else if (message.type === 'editRow') { this.session.editRow(message.row, message.values); }
         else { this.session[message.type](); }
         this.lifecycle.changed();
         await this.postEditState();

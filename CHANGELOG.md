@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Open a vertical row-details modal on double-click or Enter, including read-only fields.
+- Apply all changed fields as one validated, undoable command; preserve protected columns and staged saving.
+- Preserve unsent modal values on validation errors, support Escape to cancel and Ctrl/Cmd+Enter to apply.
+- Migrate 0.3.x hot-exit drafts to grouped history without losing undo/redo.
+- Add real extension screenshots to the English and Portuguese READMEs.
+
 ## 0.3.1
 
 - Add a dedicated database icon to the extension listing and Marketplace packages, using the publisher's navy palette.
